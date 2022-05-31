@@ -1,4 +1,4 @@
-import { useEffect, useState} from "react";
+import {useEffect, useState} from "react";
 import './style.scss'
 
 
@@ -25,6 +25,8 @@ function App() {
             board: [null, null, null, null, null, null, null, null, null],
             player: 0,
             turn: "Player: O it's your Turn!",
+            active: false,
+            iHistory: 0,
             history: [{
                 board: [null, null, null, null, null, null, null, null, null],
                 player: "Player: O it's your Turn!",
@@ -41,30 +43,76 @@ function App() {
 
 
     const onClickButton = (i) => {
+        if (boardData.active) {
 
-            if (boardData.board[i] === null) {
-                boardData.board[i] = X_PLAYER
-                boardData.turn = "Player: O it's your Turn!"
-                if (boardData.player % 2 === 0) {
-                    boardData.board[i] = O_PLAYER
-                    boardData.turn = "Player: X it's your Turn!"
+            const iHistory = boardData.iHistory +1
+            const newHistory = []
+            const newBoard = []
+            boardData.board.map(el => newBoard.push(el))
+
+
+
+              if (newBoard[i] === null) {
+                  newBoard[i] = X_PLAYER
+                  boardData.turn = "Player: O it's your Turn!"
+                  if (boardData.player % 2 === 0) {
+                      newBoard[i] = O_PLAYER
+                      boardData.turn = "Player: X it's your Turn!"
+                  }
+              }
+
+            boardData.history.map((el, index) => {
+                if (index <= iHistory) {
+                    newHistory.push(el)
                 }
+            })
 
-                setBoardData({
-                    ...boardData,
-                    board: boardData.board,
-                    player: boardData.player + 1,
-                    history: [...boardData.history,
-                        {
-                            board: [...boardData.board],
-                            player: boardData.turn,
-                            classDisabled: false,
-                        }
-                    ]
-                })
+
+            newHistory[iHistory].board = newBoard
+            boardData.board = newBoard
+
+            setBoardData({
+                ...boardData,
+                player: boardData.player + 1,
+                board: newBoard,
+                history: newHistory,
+                active: false
+            })
+
+            /*boardData.board = boardData.history[boardData.history.length].board*/
+            return
+        }
+
+
+        if (boardData.board[i] === null) {
+            boardData.board[i] = X_PLAYER
+            boardData.turn = "Player: O it's your Turn!"
+            if (boardData.player % 2 === 0) {
+                boardData.board[i] = O_PLAYER
+                boardData.turn = "Player: X it's your Turn!"
             }
+        }
+
+
+        setBoardData({
+            ...boardData,
+            board: boardData.board,
+            player: boardData.player + 1,
+            history: [...boardData.history,
+                {
+                    board: [...boardData.board],
+                    player: boardData.turn,
+                    classDisabled: false,
+                }
+            ]
+        })
         checkWin()
     }
+    /*   console.log(
+           "\n","player",boardData.player,
+           "\n","turn",boardData.turn
+       )*/
+
 
 
     const checkWin = () => {
@@ -111,11 +159,13 @@ function App() {
     }
 
     const onHistory = (item, index) => {
+        boardData.board = item.board
         setBoardData({
             ...boardData,
-            board: item.board,
             turn: item.player,
-            boolHistory: [true, index]
+            player: index,
+            active: true,
+            iHistory: index,
         })
     }
 
