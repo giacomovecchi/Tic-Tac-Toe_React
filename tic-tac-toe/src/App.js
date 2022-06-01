@@ -60,7 +60,10 @@ function App() {
 
     const checkWin = (board) => {
         const responseNull = board.every((el => el !== null))
-        if (responseNull) return boardData.turn = NOBODY_WIN
+        if (responseNull) {
+            boardData.btnDisabled = true
+            return boardData.turn = NOBODY_WIN
+        }
         STREAKS.map(el => {
             const [a, b, c] = el
             if (board[a] && board[a] === board[b] && board[a] === board[c]) {
@@ -78,7 +81,7 @@ function App() {
     }
 
 
-    function nextPlayer(i) {
+    const nextPlayer = (i) => {
         const player = i.filter(Boolean).length % 2 === 0 ? X_PLAYER : O_PLAYER
         if (player === X_PLAYER) {
             boardData.turn = X_TURN
