@@ -3,7 +3,12 @@ import './style.scss'
 
 
 const X_PLAYER = "X"
+const X_TURN = "Player X, it's your turn!"
+const X_WIN = "Winner: Player X 🎉🥳"
 const O_PLAYER = "O"
+const O_WIN = "Winner: Player O 🎉🥳"
+const O_TURN = "Player O, it's your turn!"
+const NOBODY_WIN = "Nobody Won!"
 
 const STREAKS = [
     [0, 1, 2],
@@ -16,182 +21,119 @@ const STREAKS = [
     [2, 4, 6],
 ]
 
+
 function App() {
-    const [boardData, setBoardData] = useState(JSON.parse(localStorage.getItem('valueObj')))
+    const [boardData, setBoardData] = useState(JSON.parse(localStorage.getItem('valueObj') || JSON.stringify({
+        initialBoard: [Array(9).fill(null)],
+        step: 0,
+        turn: "",
+        btnDisabled: false
+    })))
 
     const onRestart = () => {
         localStorage.clear()
         setBoardData({
-            board: [null, null, null, null, null, null, null, null, null],
-            player: 0,
-            turn: "Player: O it's your Turn!",
-            active: false,
-            iHistory: 0,
-            history: [{
-                board: [null, null, null, null, null, null, null, null, null],
-                player: "Player: O it's your Turn!",
-                classDisabled: false,
-
-            }],
+            initialBoard: [Array(9).fill(null)],
+            step: 0,
+            turn: "",
+            btnDisabled: false
         })
     }
-
 
     useEffect(() => {
         localStorage.setItem('valueObj', JSON.stringify(boardData));
     }, [boardData])
 
 
+
     const onClickButton = (i) => {
-        if (boardData.active) {
+        if (currentBoard[i] !== null) return
 
-            const iHistory = boardData.iHistory +1
-            const newHistory = []
-            const newBoard = []
-            boardData.board.map(el => newBoard.push(el))
-
-
-
-              if (newBoard[i] === null) {
-                  newBoard[i] = X_PLAYER
-                  boardData.turn = "Player: O it's your Turn!"
-                  if (boardData.player % 2 === 0) {
-                      newBoard[i] = O_PLAYER
-                      boardData.turn = "Player: X it's your Turn!"
-                  }
-              }
-
-            boardData.history.map((el, index) => {
-                if (index <= iHistory) {
-                    newHistory.push(el)
-                }
-            })
-
-
-            newHistory[iHistory].board = newBoard
-            boardData.board = newBoard
-
-            setBoardData({
-                ...boardData,
-                player: boardData.player + 1,
-                board: newBoard,
-                history: newHistory,
-                active: false
-            })
-
-            /*boardData.board = boardData.history[boardData.history.length].board*/
-            return
-        }
-
-
-        if (boardData.board[i] === null) {
-            boardData.board[i] = X_PLAYER
-            boardData.turn = "Player: O it's your Turn!"
-            if (boardData.player % 2 === 0) {
-                boardData.board[i] = O_PLAYER
-                boardData.turn = "Player: X it's your Turn!"
-            }
-        }
-
-
-        setBoardData({
-            ...boardData,
-            board: boardData.board,
-            player: boardData.player + 1,
-            history: [...boardData.history,
-                {
-                    board: [...boardData.board],
-                    player: boardData.turn,
-                    classDisabled: false,
-                }
-            ]
-        })
-        checkWin()
+        boardData.step = boardData.step + 1
+        const history = boardData.initialBoard.slice(0, boardData.step)
+        const board = [...currentBoard]
+        board[i] = nextValue
+        boardData.step = history.length
+        setBoardData({...boardData, initialBoard: [...history, board]})
     }
-    /*   console.log(
-           "\n","player",boardData.player,
-           "\n","turn",boardData.turn
-       )*/
 
 
-
-    const checkWin = () => {
+    const checkWin = (board) => {
+        const responseNull = board.every((el => el !== null))
+        if (responseNull) return boardData.turn = NOBODY_WIN
         STREAKS.map(el => {
-            const [a, b, c] = el.map(i => boardData.board[i])
-            if (a === X_PLAYER && b === X_PLAYER && c === X_PLAYER) {
-                boardData.turn = "Winner: Player X 🎉🥳"
-                setBoardData({
-                    ...boardData,
-                    board: boardData.board,
-                    player: boardData.player + 1,
-                    history: [...boardData.history,
-                        {
-                            board: [...boardData.board],
-                            player: boardData.turn,
-                            classDisabled: true,
-                        }
-                    ]
-                })
-            } else if (a === O_PLAYER && b === O_PLAYER && c === O_PLAYER) {
-                boardData.turn = "Winner: Player O 🎉🥳"
-                setBoardData({
-                    ...boardData,
-                    board: boardData.board,
-                    player: boardData.player + 1,
-                    history: [...boardData.history,
-                        {
-                            board: [...boardData.board],
-                            player: boardData.turn,
-                        }
-                    ]
-                })
+            const [a, b, c] = el
+            if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                if (boardData.turn === X_TURN) {
+                    return boardData.turn = O_WIN
+                }
+                if (boardData.turn === O_TURN) {
+                    return boardData.turn = X_WIN
+                }
             }
         })
-    }
-
-
-    const display = () => {
-        if (boardData.board.every((el => el !== null))) {
-            boardData.turn = "Nobody Won"
-            boardData.classDisabled = true
+        if (boardData.turn === X_WIN || boardData.turn === O_WIN) {
+            boardData.btnDisabled = true
         }
-        return boardData.turn
-    }
-
-    const onHistory = (item, index) => {
-        boardData.board = item.board
-        setBoardData({
-            ...boardData,
-            turn: item.player,
-            player: index,
-            active: true,
-            iHistory: index,
-        })
     }
 
 
-    const buildClassName = (item, index) => {
-        let className = "tris__previous__btn"
-        /*className += " tris__previous__btn--active"*/
-        return className
+    function nextPlayer(i) {
+        const player = i.filter(Boolean).length % 2 === 0 ? X_PLAYER : O_PLAYER
+        if (player === X_PLAYER) {
+            boardData.turn = X_TURN
+        }
+        if (player === O_PLAYER) {
+            boardData.turn = O_TURN
+        }
+        return player
+    }
+
+    const setHistory = (i) => {
+        setBoardData({...boardData, step: i, indexHistory: i, btnDisabled: false})
+
+    }
+
+    const buildClassHistory = (index) => {
+        let classNames = "tris__previous__btn "
+
+        if (boardData.step === index) classNames += " tris__previous__btn--active"
+
+        return classNames
+    }
+
+    const buildHistory = () => {
+        return boardData.initialBoard.map((el, index) => (
+            <button
+                key={index}
+                className={buildClassHistory(index)}
+                onClick={() => setHistory(index)}>
+                {index}
+            </button>
+        ))
     }
 
 
     const buildTris = (i) => {
         return (
             <button
-                className={`tris__table__btn  ${boardData.classDisabled} `}
-                disabled={boardData.classDisabled}
-                onClick={() => onClickButton(i)}>{boardData.board[i]}
+                className={`tris__table__btn `}
+                disabled={boardData.btnDisabled}
+                onClick={() => onClickButton(i)}>{board[i] === null ? "." : board[i]}
             </button>
         )
     }
+
+    const currentBoard = boardData.initialBoard[boardData.step]
+    const board = [...currentBoard]
+    const nextValue = nextPlayer(currentBoard)
+    checkWin(currentBoard)
 
 
     return (
         <div className="tris">
             <div className="tris__winner">
-                <h1>{display()}</h1>
+                <h1>{boardData.turn}</h1>
             </div>
             <table className="tris__table">
                 <tbody>
@@ -216,14 +158,7 @@ function App() {
                 <button className="tris__restart__btn" onClick={() => onRestart()}>Restart!</button>
             </div>
             <div className="tris__previous">
-                {boardData.history.map((item, index) =>
-                    <button
-                        key={index}
-                        className={buildClassName(item, index)}
-                        onClick={() => onHistory(item, index)}>
-                        {index}
-                    </button>
-                )}
+                {buildHistory()}
             </div>
         </div>
     );
